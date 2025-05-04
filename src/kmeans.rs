@@ -2,7 +2,6 @@
 use std::error::Error;
 use ndarray::Array2;
 use linfa_clustering::KMeans;
-use linfa::traits::{Fit, Predict};
 use linfa::Dataset;
 use crate::csv_reader::Transaction;
 
@@ -51,39 +50,40 @@ pub fn analyze_clusters(transactions: &[Transaction], n_clusters: usize) -> Resu
         }
     }
 
-    // Perform K-Means clustering
+    // Perform K-Means clustering and get cluster assignments
     let dataset = Dataset::from(data);
     let model = KMeans::params(n_clusters)
         .max_n_iterations(100)
         .tolerance(1e-4)
         .fit(&dataset)?;
+    
+    let assignments = model.predict(&dataset);
 
     // Analyze each cluster
     let mut cluster_analyses = Vec::new();
     for cluster_idx in 0..n_clusters {
         // Get transactions belonging to current cluster
         let cluster_transactions: Vec<&Transaction> = transactions.iter()
-            //this section predicts the cluster index for the transaction
-            .zip(model.predict(&dataset).iter())
+            .zip(assignments.iter())
             .filter(|(_, &pred)| pred == cluster_idx)
             .map(|(tx, _)| tx)
             .collect();
-        //this section checks if the cluster is empty
+
         if cluster_transactions.is_empty() {
             continue;
         }
-        //this section calculates the size of the cluster  
+
+        // Calculate basic cluster statistics
         let size = cluster_transactions.len();
-        //this section calculates the number of fraudulent transactions in the cluster
         let fraud_count = cluster_transactions.iter()
             .filter(|tx| tx.fraudulent == Some(1))
             .count();
-        //this section calculates the number of unique users in the cluster
         let unique_users = cluster_transactions.iter()
             .map(|tx| tx.user_id)
             .collect::<std::collections::HashSet<_>>()
             .len();
-        //this section calculates the average features for the cluster
+
+        // Calculate average feature values
         let mut avg_features = vec![0.0; n_features];
         for tx in &cluster_transactions {
             let features = tx.to_feature_vector();
@@ -94,24 +94,26 @@ pub fn analyze_clusters(transactions: &[Transaction], n_clusters: usize) -> Resu
         for value in &mut avg_features {
             *value /= size as f64;
         }
-        //this section calculates the most common transaction type and payment method for the cluster
+
+        // Find most common transaction characteristics
         let mut tx_type_counts = std::collections::HashMap::new();
         let mut payment_counts = std::collections::HashMap::new();
         for tx in &cluster_transactions {
             *tx_type_counts.entry(tx.transaction_type.clone()).or_insert(0) += 1;
             *payment_counts.entry(tx.payment_method.clone()).or_insert(0) += 1;
         }
-        //this section calculates the most common transaction type and payment method for the cluster
+
         let most_common_tx_type = tx_type_counts.into_iter()
             .max_by_key(|&(_, count)| count)
             .map(|(tx_type, _)| tx_type)
             .unwrap_or_default();
-        //this section calculates the most common payment method for the cluster
+
         let most_common_payment = payment_counts.into_iter()
             .max_by_key(|&(_, count)| count)
             .map(|(payment, _)| payment)
             .unwrap_or_default();
-        //this section pushes the cluster analysis to the vector
+
+        // Create cluster analysis object
         cluster_analyses.push(ClusterAnalysis {
             size,
             fraud_count,
@@ -121,6 +123,6 @@ pub fn analyze_clusters(transactions: &[Transaction], n_clusters: usize) -> Resu
             most_common_payment,
         });
     }
-    //this section returns the vector of cluster analyses   
+
     Ok(cluster_analyses)
 }
