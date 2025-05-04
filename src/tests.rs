@@ -93,7 +93,6 @@ mod tests {
         let clusters = analyze_clusters(&transactions, n_clusters).unwrap();
 
         for cluster in clusters {
-            // Test size properties
             assert!(cluster.size > 0, "Cluster size should be positive");
             assert!(cluster.fraud_count <= cluster.size, "Fraud count cannot exceed cluster size");
             assert!(cluster.unique_users <= cluster.size, "Unique users cannot exceed cluster size");
