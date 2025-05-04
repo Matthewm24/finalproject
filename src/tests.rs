@@ -5,7 +5,7 @@ use crate::kmeans::analyze_clusters;
 mod tests {
     use super::*;
 
-    fn create_test_transactions() -> Vec<Transaction> {
+    fn create_test_transactions() -> Vec<Transaction> { //creates vectors of transactions for testing
         vec![
             Transaction {
                 user_id: 1,
@@ -44,7 +44,7 @@ mod tests {
     }
 
     #[test]
-    fn test_transaction_feature_vector() {
+    fn test_transaction_feature_vector() { //tests the feature vector for the transaction
         let transaction = create_test_transactions()[0].clone();
         let features = transaction.to_feature_vector();
         assert_eq!(features.len(), 5, "Feature vector should have 5 elements");
@@ -57,7 +57,7 @@ mod tests {
     }
 
     #[test]
-    fn test_transaction_feature_vector_with_none_values() {
+    fn test_transaction_feature_vector_with_none_values() { //tests the feature vector for the transaction with none values
         let mut transaction = create_test_transactions()[0].clone();
         transaction.transaction_amount = None;
         transaction.time_of_transaction = None;
@@ -65,7 +65,7 @@ mod tests {
         transaction.account_age = None;
         transaction.number_of_transactions_last_24h = None;
 
-        let features = transaction.to_feature_vector();
+        let features = transaction.to_feature_vector(); //assert_eq verifies what happens with none values.
         assert_eq!(features.len(), 5, "Feature vector should still have 5 elements");
         assert_eq!(features[0], 0.0, "None transaction amount should default to 0.0");
         assert_eq!(features[1], 0.0, "None time should default to 0.0");
@@ -75,7 +75,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clustering_basic() {
+    fn test_clustering_basic() { //tests the clustering for the transactions
         let transactions = create_test_transactions();
         let n_clusters = 2;
         let result = analyze_clusters(&transactions, n_clusters);
@@ -108,7 +108,7 @@ mod tests {
     }
 
     #[test]
-    fn test_empty_transactions() {
+    fn test_empty_transactions() { //tests the empty transactions
         let empty_transactions: Vec<Transaction> = vec![];
         let result = analyze_clusters(&empty_transactions, 2);
         
